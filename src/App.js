@@ -76,7 +76,7 @@ const App = () => {
       const { data: translationsList } = await axios.get('http://localhost:4200/file')
       setTranslations(translationsList)
     } catch (error) {
-      setErrorMessage(error.request?.body?.message || 'Cury é burro e n codou direito')
+      setErrorMessage(error.request?.body || 'Cury é burro e n codou direito')
     }
   }, [])
 
@@ -88,7 +88,7 @@ const App = () => {
         setNewTranslations(false)
         getTranlations()
       } catch (error) {
-        setErrorMessage(error.request?.body?.message || 'Cury é burro e n codou direito')
+        setErrorMessage(error.request?.body || 'Cury é burro e n codou direito')
       }
     },
     [getTranlations]
@@ -102,7 +102,7 @@ const App = () => {
         setNewTranslations(false)
         getTranlations()
       } catch (error) {
-        setErrorMessage(error.request?.body?.message || 'Cury é burro e n codou direito')
+        setErrorMessage(error.request?.body || 'Cury é burro e n codou direito')
       }
     },
     [getTranlations]
@@ -142,7 +142,7 @@ const App = () => {
         getTranlations()
       } catch (error) {
         console.log(error)
-        setErrorMessage(error.request?.body?.message || 'Cury é burro e n codou direito')
+        setErrorMessage(error.request?.body || 'Cury é burro e n codou direito')
       }
     },
     [form, getTranlations]
