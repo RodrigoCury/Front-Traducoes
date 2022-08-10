@@ -1,60 +1,19 @@
-import {
-  Alert,
-  Breadcrumb,
-  Button,
-  Form,
-  Input,
-  Layout,
-  notification,
-  Popconfirm,
-  Row,
-  Space,
-  Table,
-  Typography,
-} from 'antd'
+import { Alert, Breadcrumb, Button, Drawer, Form, Input, Layout, Popconfirm, Row, Space, Table, Typography } from 'antd'
 import { Content, Footer, Header } from 'antd/lib/layout/layout'
 import { useCallback, useLayoutEffect, useRef, useState } from 'react'
-import 'antd/dist/antd.min.css'
 import FormItem from 'antd/es/form/FormItem'
 import axios from 'axios'
-import { CheckCircleTwoTone, CloseCircleTwoTone, EditTwoTone, SearchOutlined } from '@ant-design/icons'
+import { CheckOutlined, CloseOutlined, EditOutlined, SearchOutlined } from '@ant-design/icons'
 import Highlighter from 'react-highlight-words'
 import TextArea from 'antd/lib/input/TextArea'
-
-const EditableCell = ({ editing, dataIndex, title, inputType, record, index, children, ...restProps }) => {
-  return (
-    <td {...restProps}>
-      {editing ? (
-        <Form.Item
-          name={dataIndex}
-          style={{
-            margin: 0,
-          }}
-          rules={[
-            {
-              required: true,
-              message: `Please Input ${title}!`,
-            },
-          ]}
-        >
-          {dataIndex === 'key' ? <Input /> : <TextArea />}
-        </Form.Item>
-      ) : (
-        children
-      )}
-    </td>
-  )
-}
-
-const openNotificationWithIcon = (type, message) => {
-  notification[type]({ message })
-}
+import 'antd/dist/antd.min.css'
 
 const App = () => {
   const [path, setPath] = useState({ path: null })
   const [errorMessage, setErrorMessage] = useState(null)
   const [editingKey, setEditingKey] = useState('')
   const [translations, setTranslations] = useState([])
+  const [newTranslations, setNewTranslations] = useState(false)
   const [form] = Form.useForm()
 
   const isEditing = (record) => record?.key === editingKey
@@ -72,6 +31,33 @@ const App = () => {
   const handleReset = (clearFilters) => {
     clearFilters()
     setSearchText('')
+  }
+
+  const EditableCell = ({ editing, dataIndex, title, inputType, record, index, children, ...restProps }) => {
+    return (
+      <td {...restProps}>
+        {editing ? (
+          <Form.Item
+            name={dataIndex}
+            style={{
+              margin: 0,
+            }}
+            rules={[
+              { required: true, message: 'A Tradução é necessária' },
+              () => ({
+                validator(_, value) {
+                  return validateTranlations(dataIndex, value)
+                },
+              }),
+            ]}
+          >
+            {dataIndex === 'key' ? <Input /> : <TextArea />}
+          </Form.Item>
+        ) : (
+          children
+        )}
+      </td>
+    )
   }
 
   const edit = (record) => {
@@ -93,6 +79,34 @@ const App = () => {
       setErrorMessage(error.request?.body?.message || 'Cury é burro e n codou direito')
     }
   }, [])
+
+  const saveNewTranslations = useCallback(
+    async (data) => {
+      try {
+        await axios.post('http://localhost:4200/key', data)
+        setErrorMessage(null)
+        setNewTranslations(false)
+        getTranlations()
+      } catch (error) {
+        setErrorMessage(error.request?.body?.message || 'Cury é burro e n codou direito')
+      }
+    },
+    [getTranlations]
+  )
+
+  const finishChangesAndSave = useCallback(
+    async (data) => {
+      try {
+        await axios.post('http://localhost:4200/file')
+        setErrorMessage(null)
+        setNewTranslations(false)
+        getTranlations()
+      } catch (error) {
+        setErrorMessage(error.request?.body?.message || 'Cury é burro e n codou direito')
+      }
+    },
+    [getTranlations]
+  )
 
   const savePath = useCallback(
     async (data) => {
@@ -128,7 +142,7 @@ const App = () => {
         getTranlations()
       } catch (error) {
         console.log(error)
-        openNotificationWithIcon('error', error.response?.data)
+        setErrorMessage(error.request?.body?.message || 'Cury é burro e n codou direito')
       }
     },
     [form, getTranlations]
@@ -236,14 +250,20 @@ const App = () => {
       render: (_, record) => {
         const editable = isEditing(record)
         return editable ? (
-          <Space>
+          <Row justify='space-between' align='middle'>
             <Popconfirm title='Certeza que quer salvar?' onConfirm={() => saveRow(record.key)}>
-              <Button icon={<CheckCircleTwoTone />} title='salvar' />
+              <Button icon={<CheckOutlined />} shape='circle' type='primary' title='salvar' />
             </Popconfirm>
-            <Button icon={<CloseCircleTwoTone />} onClick={() => setEditingKey('')} />
-          </Space>
+            <Button icon={<CloseOutlined />} shape='circle' type='primary' onClick={() => setEditingKey('')} />
+          </Row>
         ) : (
-          <Button disabled={editingKey !== ''} onClick={() => edit(record)} icon={<EditTwoTone />} />
+          <Button
+            disabled={editingKey !== ''}
+            onClick={() => edit(record)}
+            shape='circle'
+            type='primary'
+            icon={<EditOutlined />}
+          />
         )
       },
     },
@@ -263,6 +283,74 @@ const App = () => {
       }),
     }
   })
+
+  const validateTranlations = (key, value) => {
+    const index = translations.findIndex((translation) => translation[key] === value)
+    if (index === -1) return Promise.resolve()
+    return Promise.reject('O valor já está sendo usado em outra tradução, precisa mesmo utilizá-lo?')
+  }
+
+  const NewTranlationsForm = () => (
+    <Form
+      labelWrap
+      labelAlign='left'
+      labelCol={{ span: 8 }}
+      wrapperCol={{ span: 16 }}
+      onFinish={saveNewTranslations}
+      autoComplete='off'
+    >
+      <FormItem label='Chave' name='key' rules={[{ required: true, message: 'A chave é necessária' }]}>
+        <Input />
+      </FormItem>
+      <FormItem
+        label='Português'
+        name='pt'
+        rules={[
+          { required: true, message: 'A Tradução é necessária' },
+          () => ({
+            validator(_, value) {
+              return validateTranlations('pt', value)
+            },
+          }),
+        ]}
+      >
+        <TextArea />
+      </FormItem>
+      <FormItem
+        label='Espanhol'
+        name='es'
+        rules={[
+          { required: true, message: 'A Tradução é necessária' },
+          () => ({
+            validator(_, value) {
+              return validateTranlations('es', value)
+            },
+          }),
+        ]}
+      >
+        <TextArea />
+      </FormItem>
+      <FormItem
+        label='Inglês'
+        name='en'
+        rules={[
+          { required: true, message: 'A Tradução é necessária' },
+          () => ({
+            validator(_, value) {
+              return validateTranlations('en', value)
+            },
+          }),
+        ]}
+      >
+        <TextArea />
+      </FormItem>
+      <Form.Item>
+        <Button type='primary' htmlType='submit' shape='round'>
+          Criar nova Tradução
+        </Button>
+      </Form.Item>
+    </Form>
+  )
 
   return (
     <Layout className='layout'>
@@ -319,18 +407,47 @@ const App = () => {
           {!path.path ? (
             <Alert message='Você precisa definir um caminho para a pasta de traduções' type='warning' showIcon />
           ) : (
-            <Form form={form} component={false}>
-              <Table
-                rowKey='key'
-                columns={collumns}
-                dataSource={translations}
-                components={{
-                  body: {
-                    cell: EditableCell,
-                  },
-                }}
-              />
-            </Form>
+            <>
+              <Drawer
+                closable
+                title='Criar nova tradução'
+                onClose={() => setNewTranslations(false)}
+                visible={newTranslations}
+                footer={false}
+                placement='bottom'
+                size='large'
+              >
+                <NewTranlationsForm />
+              </Drawer>
+              <Row justify='end' style={{ margin: '8px 0' }}>
+                <Space>
+                  <Popconfirm
+                    title='Suas alteração vão sobrescrever os arquivos de tradução'
+                    placement='left'
+                    onConfirm={() => finishChangesAndSave()}
+                    okText='Pode salvar'
+                    cancelText='Cancelar'
+                  >
+                    <Button type='primary'>Finalizar Mudanças e salvar no arquivo</Button>
+                  </Popconfirm>
+                  <Button type='primary' ghost onClick={() => setNewTranslations(true)}>
+                    Adicionar Tradução Nova
+                  </Button>
+                </Space>
+              </Row>
+              <Form form={form} component={false}>
+                <Table
+                  rowKey='key'
+                  columns={collumns}
+                  dataSource={translations}
+                  components={{
+                    body: {
+                      cell: EditableCell,
+                    },
+                  }}
+                />
+              </Form>
+            </>
           )}
         </div>
       </Content>
