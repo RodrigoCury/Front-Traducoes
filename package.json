@@ -2,6 +2,8 @@
   "name": "front",
   "version": "0.1.0",
   "private": true,
+  "format": "prettier --write \"src/**/*.{js,jsx}\"",
+  "lint": "eslint \"src/**/*.{js,jsx}\" --quiet",
   "dependencies": {
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.3.0",
@@ -10,6 +12,15 @@
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
     "web-vitals": "^2.1.4"
+  },
+  "devDependencies": {
+    "eslint": "^8.21.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-jsx-a11y": "^6.6.1",
+    "eslint-plugin-react": "^7.30.1",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "prettier": "^2.7.1"
   },
   "scripts": {
     "start": "react-scripts start",
